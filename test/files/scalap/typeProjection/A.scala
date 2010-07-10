@@ -1,5 +1,5 @@
 // #3555
-object test {
+class TypeProjection {
   abstract class A {
     class B1
     type B2
