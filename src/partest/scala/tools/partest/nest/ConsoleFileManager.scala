@@ -87,6 +87,7 @@ class ConsoleFileManager extends FileManager {
       latestCompFile    = testClassesDir / "compiler"
       latestPartestFile = testClassesDir / "partest"
       latestFjbgFile    = testParent / "lib" / "fjbg.jar"
+      latestScalapFile    = testClassesDir / "scalap"
     }
     else if (testBuild.isDefined) {
       val dir = Path(testBuild.get)
@@ -95,6 +96,7 @@ class ConsoleFileManager extends FileManager {
       latestLibFile     = dir / "lib/scala-library.jar"
       latestCompFile    = dir / "lib/scala-compiler.jar"
       latestPartestFile = dir / "lib/scala-partest.jar"
+      latestScalapFile = dir / "lib/scalap.jar"
     }
     else {
       def setupQuick() {
@@ -103,6 +105,7 @@ class ConsoleFileManager extends FileManager {
         latestLibFile     = prefixFile("build/quick/classes/library")
         latestCompFile    = prefixFile("build/quick/classes/compiler")
         latestPartestFile = prefixFile("build/quick/classes/partest")
+        latestScalapFile = prefixFile("build/quick/classes/scalap")
       }
 
       def setupInst() {
@@ -112,6 +115,7 @@ class ConsoleFileManager extends FileManager {
         latestLibFile     = prefixFileWith(p, "lib/scala-library.jar")
         latestCompFile    = prefixFileWith(p, "lib/scala-compiler.jar")
         latestPartestFile = prefixFileWith(p, "lib/scala-partest.jar")
+        latestScalapFile = prefixFileWith(p, "lib/scalap.jar")
       }
 
       def setupDist() {
@@ -120,6 +124,7 @@ class ConsoleFileManager extends FileManager {
         latestLibFile     = prefixFile("dists/latest/lib/scala-library.jar")
         latestCompFile    = prefixFile("dists/latest/lib/scala-compiler.jar")
         latestPartestFile = prefixFile("dists/latest/lib/scala-partest.jar")
+        latestScalapFile = prefixFile("dists/latest/lib/scalap.jar")
       }
 
       def setupPack() {
@@ -128,6 +133,7 @@ class ConsoleFileManager extends FileManager {
         latestLibFile     = prefixFile("build/pack/lib/scala-library.jar")
         latestCompFile    = prefixFile("build/pack/lib/scala-compiler.jar")
         latestPartestFile = prefixFile("build/pack/lib/scala-partest.jar")
+        latestScalapFile = prefixFile("build/pack/lib/scalap.jar")
       }
 
       val dists = testParent / "dists"
@@ -167,6 +173,7 @@ class ConsoleFileManager extends FileManager {
   var latestCompFile: File = _
   var latestPartestFile: File = _
   var latestFjbgFile: File = _
+  var latestScalapFile: File = _
   var testClassesDir: Directory = _
   // initialize above fields
   findLatest()
