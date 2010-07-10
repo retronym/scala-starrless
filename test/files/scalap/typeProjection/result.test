@@ -1,0 +1,16 @@
+object test extends java.lang.Object with scala.ScalaObject {
+  def this() = { /* compiled code */ }
+  abstract class A extends java.lang.Object with scala.ScalaObject {
+    def this() = { /* compiled code */ }
+    class B1 extends java.lang.Object with scala.ScalaObject {
+      def this() = { /* compiled code */ }
+    }
+    type B2
+    def b1 : test.A#B1
+    def b2 : B2
+  }
+  trait C extends java.lang.Object {
+    def b1 : test.A#B1
+    def b2 :XXXX test.A#B2
+  }
+}
