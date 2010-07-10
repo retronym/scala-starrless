@@ -10,7 +10,19 @@ trait Symbol extends Flags {
   def parent : Option[Symbol]
   def children : Seq[Symbol]
 
-  def path : String = parent.map(_.path + ".").getOrElse("") + name
+  def isType = this match {
+    case _: ClassSymbol => true
+    case _: TypeSymbol  => true
+    case _ if isTrait   => true
+    case _              => false
+  }
+
+  def path: String = parent match {
+    case None                          => name
+    case Some(p) if p.isMethod         => name
+    case Some(p) if p.isType && isType => p.path + "#" + name
+    case Some(p)                       => p.path + "." + name
+  }
 }
 
 case object NoSymbol extends Symbol {
@@ -23,7 +35,7 @@ case object NoSymbol extends Symbol {
 abstract class ScalaSigSymbol extends Symbol {
   def applyRule[A](rule : EntryParser[A]) : A = expect(rule)(entry)
   def applyScalaSigRule[A](rule : ScalaSigParsers.Parser[A]) = ScalaSigParsers.expect(rule)(entry.scalaSig)
-    
+
   def entry : ScalaSig#Entry
   def index = entry.index
 
@@ -41,7 +53,7 @@ case class SymbolInfo(name : String, owner : Symbol, flags : Int, privateWithin 
     case sym : SymbolInfoSymbol => sym.index.toString
     case other => other.toString
   }
-    
+
   override def toString = name + ", owner=" + symbolString(owner) + ", flags=" + flags.toHexString + ", info=" + info + (privateWithin match {
     case Some(any) => ", privateWithin=" + symbolString(any)
     case None => " "
@@ -50,7 +62,7 @@ case class SymbolInfo(name : String, owner : Symbol, flags : Int, privateWithin 
 
 abstract class SymbolInfoSymbol extends ScalaSigSymbol {
   def symbolInfo : SymbolInfo
-  
+
   def entry = symbolInfo.entry
   def name = symbolInfo.name
   def parent = Some(symbolInfo.owner)
@@ -60,7 +72,7 @@ abstract class SymbolInfoSymbol extends ScalaSigSymbol {
 }
 
 case class TypeSymbol(symbolInfo : SymbolInfo) extends SymbolInfoSymbol{
-  override def path = name
+  override def path = if (isParam) name else super.path
 }
 
 case class AliasSymbol(symbolInfo : SymbolInfo) extends SymbolInfoSymbol{
