@@ -912,10 +912,18 @@ self =>
      *                     |  Path `.' type
      *                     |  `(' Types `)'
      *                     |  WildcardType
+     *                     |  TypeFunTypeParamClause SimpleType
      */
     def simpleType(isPattern: Boolean): Tree = {
       val start = in.offset
-      val t = 
+      if (!isPattern && in.token == LBRACKET) {
+        atPos(start) {
+          val typeFunParams = typeFunTypeParamClause
+          val t = simpleType(isPattern)
+          TypeDef(NoMods, freshName("typefun$"), typeFunParams, t)
+        }
+      } else {
+        val t =
         if (in.token == LPAREN) {
           in.nextToken()
           val ts = types(isPattern, false, false)
@@ -927,7 +935,8 @@ self =>
           case r @ SingletonTypeTree(_) => r
           case r => convertToTypeId(r)
         }
-      simpleTypeRest(t, isPattern)
+        simpleTypeRest(t, isPattern)
+      }
     }
 
     def simpleTypeRest(t: Tree, isPattern: Boolean): Tree =
@@ -1934,6 +1943,41 @@ self =>
         }
         accept(RBRACKET)
       }
+      params.toList
+    }
+
+
+    /**
+     *  TypeFunTypeParamClause    ::= `[' TypeFunTypeParam {`,' TypeFunTypeParam} `]']
+     *  TypeFunTypeParam             ::= Id // TODO add bounds
+     */
+    // TODO Reduce duplication with typeParamClauseOpt
+    def typeFunTypeParamClause: List[TypeDef] = {
+      def typeParam(ms: Modifiers): TypeDef = {
+        var mods = ms | Flags.PARAM
+        val start = in.offset
+        val nameOffset = in.offset
+        val pname =
+          (if (in.token == USCORE) { // TODO AM: freshName(o2p(in.skipToken()), "_$$"), will need to update test suite
+            in.nextToken()
+            nme.WILDCARD
+          } else ident()).toTypeName
+        val param = atPos(start, nameOffset) {
+          val td = TypeDef(mods, pname, List.empty, typeBounds())
+          td.sy
+          td
+        }
+        param
+      }
+      val params = new ListBuffer[TypeDef]
+      newLineOptWhenFollowedBy(LBRACKET)
+      accept(LBRACKET)
+      params += typeParam(NoMods.withAnnotations(annotations(true, false)))
+      while (in.token == COMMA) {
+        in.nextToken()
+        params += typeParam(NoMods.withAnnotations(annotations(true, false)))
+      }
+      accept(RBRACKET)
       params.toList
     }
 
