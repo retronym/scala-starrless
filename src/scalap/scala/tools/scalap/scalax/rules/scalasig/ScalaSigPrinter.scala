@@ -202,7 +202,10 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
     def _pmt(mt: Type {def resultType: Type; def paramSymbols: Seq[Symbol]}) = {
 
       val paramEntries = mt.paramSymbols.map({
-        case ms: MethodSymbol => ms.name + " : " + toString(ms.infoType)(TypeFlags(true))
+        case ms: MethodSymbol =>
+          val nameAndType = ms.name + " : " + toString(ms.infoType)(TypeFlags(true))
+          val default = if (ms.hasDefault) " = { /* compiled code */ }" else ""
+          nameAndType + default
         case _ => "^___^"
       })
 

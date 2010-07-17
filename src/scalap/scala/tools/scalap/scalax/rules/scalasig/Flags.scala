@@ -44,6 +44,7 @@ trait Flags {
 
   def isCaseAccessor = hasFlag(0x01000000)
   def isTrait = hasFlag(0x02000000)
+  def hasDefault = hasFlag(0x02000000)
   def isBridge = hasFlag(0x04000000)
   def isAccessor = hasFlag(0x08000000)
 
