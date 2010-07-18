@@ -1,0 +1,14 @@
+class ClassNestedInObject extends java.lang.Object with scala.ScalaObject {
+  def this() = { /* compiled code */ }
+  object A extends java.lang.Object with scala.ScalaObject {
+    def this() = { /* compiled code */ }
+    class B extends java.lang.Object with scala.ScalaObject {
+      def this() = { /* compiled code */ }
+    }
+    val b : ClassNestedInObject.A.B = { /* compiled code */ }
+    object C extends java.lang.Object with scala.ScalaObject {
+      def this() = { /* compiled code */ }
+    }
+    val c : ClassNestedInObject.A.C.type = { /* compiled code */ }
+  }
+}

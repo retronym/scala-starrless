@@ -338,7 +338,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
         processName(symbol.name) + ".this.type"
       }
       case SingleType(typeRef, symbol) => {
-        processName(symbol.path) + ".type"
+        StringUtil.trimStart(processName(symbol.path), "<empty>.") + ".type"
       }
       case ConstantType(constant) => (constant match {
         case null => "scala.Null"
@@ -363,9 +363,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
         case _ => {
           val prefixStr = (prefix, toString(prefix)) match {
             case (NoPrefixType, _) => ""
-            case (ThisType(packSymbol), _) 
-              // TODO clean this up.
-              if packSymbol.isPackage || packSymbol.isInstanceOf[ExternalSymbol] =>
+            case (ThisType(packSymbol), _) if !packSymbol.isType =>
               processName(packSymbol.path) + "."
             case (_, SingletonTypePattern(a)) => a + "."
             case (_, a) => a + "#"

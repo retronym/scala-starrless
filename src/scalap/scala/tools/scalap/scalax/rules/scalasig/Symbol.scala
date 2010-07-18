@@ -10,6 +10,13 @@ trait Symbol extends Flags {
   def parent : Option[Symbol]
   def children : Seq[Symbol]
 
+  def isType = this match {
+    case _: ClassSymbol if !isModule=> true
+    case _: TypeSymbol => true
+    case _ if isTrait => true
+    case _ => false
+  }
+
   def path : String = parent.map(_.path + ".").getOrElse("") + name
 }
 
