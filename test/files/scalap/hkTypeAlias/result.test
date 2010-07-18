@@ -1,0 +1,4 @@
+class HkTypeAlias extends java.lang.Object with scala.ScalaObject {
+  def this() = { /* compiled code */ }
+  type List[+A] = scala.collection.immutable.List[A]
+}

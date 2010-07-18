@@ -274,8 +274,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
   def printAlias(level: Int, a: AliasSymbol) {
     print("type ")
     print(processName(a.name))
-    print(" = ")
-    printType(a.infoType)
+    printType(a.infoType, " = ")
     print("\n")
     printChildren(level, a)
   }
@@ -289,7 +288,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
 
   def toString(attrib: AttributeInfo): String = {
     val buffer = new StringBuffer
-    buffer.append("@").append(toString(attrib.typeRef))
+    buffer.append(toString(attrib.typeRef, "@"))
     if (attrib.value.isDefined) {
       buffer.append("(")
       val value = attrib.value.get
@@ -330,17 +329,23 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
 
   def printType(t: Type)(implicit flags: TypeFlags): Unit = print(toString(t)(flags))
 
-  def toString(t: Type)(implicit flags: TypeFlags): String = {
-    val SingletonTypePattern = """(.*?)\.type""".r
+  def printType(t: Type, sep: String)(implicit flags: TypeFlags): Unit = print(toString(t, sep)(flags))
+
+  def toString(t: Type)(implicit flags: TypeFlags): String = toString(t, "")(flags)
+
+  private val SingletonTypePattern = """(.*?)\.type""".r
+
+  def toString(t: Type, sep: String)(implicit flags: TypeFlags): String = {
+
     // print type itself
     t match {
       case ThisType(symbol) => {
-        processName(symbol.name) + ".this.type"
+        sep + processName(symbol.name) + ".this.type"
       }
       case SingleType(typeRef, symbol) => {
-        StringUtil.trimStart(processName(symbol.path), "<empty>.") + ".type"
+        sep + StringUtil.trimStart(processName(symbol.path), "<empty>.") + ".type"
       }
-      case ConstantType(constant) => (constant match {
+      case ConstantType(constant) => sep + (constant match {
         case null => "scala.Null"
         case _: Unit => "scala.Unit"
         case _: Boolean => "scala.Boolean"
@@ -354,7 +359,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
         case _: String => "java.lang.String"
         case c: Class[_] => "java.lang.Class[" + c.getComponentType.getCanonicalName.replace("$", ".") + "]"
       })
-      case TypeRefType(prefix, symbol, typeArgs) => (symbol.path match {
+      case TypeRefType(prefix, symbol, typeArgs) => sep + (symbol.path match {
         case "scala.<repeated>" => flags match {
           case TypeFlags(true) => toString(typeArgs.head) + "*"
           case _ => "scala.Seq" + typeArgString(typeArgs)
@@ -381,26 +386,26 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
         val ubs = if (!ub.equals("scala.Any")) " <: " + ub else ""
         lbs + ubs
       }
-      case RefinedType(classSym, typeRefs) => typeRefs.map(toString).mkString("", " with ", "")
-      case ClassInfoType(symbol, typeRefs) => typeRefs.map(toString).mkString(" extends ", " with ", "")
-      case ClassInfoTypeWithCons(symbol, typeRefs, cons) => typeRefs.map(toString).
+      case RefinedType(classSym, typeRefs) => sep + typeRefs.map(toString).mkString("", " with ", "")
+      case ClassInfoType(symbol, typeRefs) => sep + typeRefs.map(toString).mkString(" extends ", " with ", "")
+      case ClassInfoTypeWithCons(symbol, typeRefs, cons) => sep + typeRefs.map(toString).
               mkString(cons + " extends ", " with ", "")
 
-      case ImplicitMethodType(resultType, _) => toString(resultType)
-      case MethodType(resultType, _) => toString(resultType)
+      case ImplicitMethodType(resultType, _) => toString(resultType, sep)
+      case MethodType(resultType, _) => toString(resultType, sep)
 
-      case PolyType(typeRef, symbols) => typeParamString(symbols) + toString(typeRef)
-      case PolyTypeWithCons(typeRef, symbols, cons) => typeParamString(symbols) + processName(cons) + toString(typeRef)
+      case PolyType(typeRef, symbols) => typeParamString(symbols) + toString(typeRef, sep)
+      case PolyTypeWithCons(typeRef, symbols, cons) => typeParamString(symbols) + processName(cons) + toString(typeRef, sep)
       case AnnotatedType(typeRef, attribTreeRefs) => {
-        toString(typeRef)
+        toString(typeRef, sep)
       }
-      case AnnotatedWithSelfType(typeRef, symbol, attribTreeRefs) => toString(typeRef)
+      case AnnotatedWithSelfType(typeRef, symbol, attribTreeRefs) => toString(typeRef, sep)
       //case DeBruijnIndexType(typeLevel, typeIndex) =>
       case ExistentialType(typeRef, symbols) => {
         val refs = symbols.map(toString _).filter(!_.startsWith("_")).map("type " + _)
-        toString(typeRef) + (if (refs.size > 0) refs.mkString(" forSome {", "; ", "}") else "")
+        toString(typeRef, sep) + (if (refs.size > 0) refs.mkString(" forSome {", "; ", "}") else "")
       }
-      case _ => t.toString
+      case _ => sep + t.toString
     }
   }
 
