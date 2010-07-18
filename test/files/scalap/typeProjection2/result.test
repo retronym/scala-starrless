@@ -1,0 +1,7 @@
+trait TypeProjection2[A] extends java.lang.Object with scala.ScalaObject {
+  def $init$() : scala.Unit = { /* compiled code */ }
+  trait GroupedIterator[B >: A] extends java.lang.Object {
+    def withPadding(x : => B) : this.type
+  }
+  def sliding[B >: A](size : scala.Int, step : scala.Int = { /* compiled code */ }) : this.GroupedIterator[B]
+}
