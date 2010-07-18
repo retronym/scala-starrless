@@ -274,7 +274,8 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
   def printAlias(level: Int, a: AliasSymbol) {
     print("type ")
     print(processName(a.name))
-    printType(a.infoType, " = ")
+    print(" = ")
+    printType(a.infoType)
     print("\n")
     printChildren(level, a)
   }
@@ -288,7 +289,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
 
   def toString(attrib: AttributeInfo): String  = {
     val buffer = new StringBuffer
-    buffer.append(toString(attrib.typeRef, "@"))
+    buffer.append("@").append(toString(attrib.typeRef, ""))
     if (attrib.value.isDefined) {
       buffer.append("(")
       val value = attrib.value.get
@@ -359,8 +360,16 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
         }
         case "scala.<byname>" => "=> " + toString(typeArgs.head)
         case _ => {
-          val path = StringUtil.cutSubstring(symbol.path)(".package") //remove package object reference
-          StringUtil.trimStart(processName(path) + typeArgString(typeArgs), "<empty>.")
+          val prefixStr = prefix match {
+            case ThisType(symbol) => processName(symbol.path) + "."
+            case SingleType(typeRef, symbol) => processName(symbol.path) + "."
+            case NoPrefixType => ""
+            case _ =>
+              toString(prefix, "") + "#"
+          }
+          //remove package object reference
+          val path = StringUtil.cutSubstring(sep + prefixStr)(".package")
+          StringUtil.trimStart(path, "<empty>.") + processName(symbol.name) + typeArgString(typeArgs)
         }
       })
       case TypeBoundsType(lower, upper) => {
