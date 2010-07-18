@@ -6,11 +6,11 @@ class TypeProjection extends java.lang.Object with scala.ScalaObject {
       def this() = { /* compiled code */ }
     }
     type B2
-    def b1 : TypeProjection.A#B1
-    def b2 : TypeProjection.A#B2
+    def b1 : TypeProjection.this.A#B1
+    def b2 : TypeProjection.this.A#B2
   }
   trait C extends java.lang.Object {
-    def b1 : TypeProjection.A#B1
-    def b2 : TypeProjection.A#B2
+    def b1 : TypeProjection.this.A#B1
+    def b2 : TypeProjection.this.A#B2
   }
 }

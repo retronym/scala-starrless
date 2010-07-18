@@ -10,19 +10,7 @@ trait Symbol extends Flags {
   def parent : Option[Symbol]
   def children : Seq[Symbol]
 
-  def isType = this match {
-    case _: ClassSymbol => true
-    case _: TypeSymbol  => true
-    case _ if isTrait   => true
-    case _              => false
-  }
-
-  def path: String = parent match {
-    case None                          => name
-    case Some(p) if p.isMethod         => name
-    case Some(p) if p.isType && isType => p.path + "#" + name
-    case Some(p)                       => p.path + "." + name
-  }
+  def path : String = parent.map(_.path + ".").getOrElse("") + name
 }
 
 case object NoSymbol extends Symbol {
@@ -72,7 +60,7 @@ abstract class SymbolInfoSymbol extends ScalaSigSymbol {
 }
 
 case class TypeSymbol(symbolInfo : SymbolInfo) extends SymbolInfoSymbol{
-  override def path = if (isParam) name else super.path
+  override def path = name
 }
 
 case class AliasSymbol(symbolInfo : SymbolInfo) extends SymbolInfoSymbol{

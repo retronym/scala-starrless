@@ -287,7 +287,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
     print("\n")
   }
 
-  def toString(attrib: AttributeInfo): String  = {
+  def toString(attrib: AttributeInfo): String = {
     val buffer = new StringBuffer
     buffer.append("@").append(toString(attrib.typeRef))
     if (attrib.value.isDefined) {
@@ -331,10 +331,15 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
   def printType(t: Type)(implicit flags: TypeFlags): Unit = print(toString(t)(flags))
 
   def toString(t: Type)(implicit flags: TypeFlags): String = {
+    val SingletonTypePattern = """(.*?)\.type""".r
     // print type itself
     t match {
-      case ThisType(symbol) => processName(symbol.path) + ".type"
-      case SingleType(typeRef, symbol) => processName(symbol.path) + ".type"
+      case ThisType(symbol) => {
+        processName(symbol.name) + ".this.type"
+      }
+      case SingleType(typeRef, symbol) => {
+        processName(symbol.path) + ".type"
+      }
       case ConstantType(constant) => (constant match {
         case null => "scala.Null"
         case _: Unit => "scala.Unit"
@@ -356,15 +361,19 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
         }
         case "scala.<byname>" => "=> " + toString(typeArgs.head)
         case _ => {
-          val prefixStr = prefix match {
-            case ThisType(symbol) => processName(symbol.path) + "."
-            case SingleType(typeRef, symbol) => processName(symbol.path) + "."
-            case NoPrefixType => ""
-            case _ => toString(prefix) + "#"
-          }
+          val prefixStr = (prefix, toString(prefix)) match {
+            case (NoPrefixType, _) => ""
+            case (ThisType(packSymbol), _) 
+              // TODO clean this up.
+              if packSymbol.isPackage || packSymbol.isInstanceOf[ExternalSymbol] =>
+              processName(packSymbol.path) + "."
+            case (_, SingletonTypePattern(a)) => a + "."
+            case (_, a) => a + "#"
+          }          
           //remove package object reference
           val path = StringUtil.cutSubstring(prefixStr)(".package")
-          StringUtil.trimStart(path, "<empty>.") + processName(symbol.name) + typeArgString(typeArgs)
+          val x = path + processName(symbol.name)
+          StringUtil.trimStart(x, "<empty>.") + typeArgString(typeArgs)
         }
       })
       case TypeBoundsType(lower, upper) => {
