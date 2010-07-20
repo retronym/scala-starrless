@@ -1,0 +1,10 @@
+package object PackageMethodAccess extends java.lang.Object with scala.ScalaObject {
+  def this() = { /* compiled code */ }
+  class MethodAccess extends java.lang.Object with scala.ScalaObject {
+    def this() = { /* compiled code */ }
+    protected[this] def foo1 : scala.Int = { /* compiled code */ }
+    protected[PackageMethodAccess] def foo3 : scala.Int = { /* compiled code */ }
+    private[PackageMethodAccess] def foo4 : scala.Int = { /* compiled code */ }
+    protected def foo5 : scala.Int = { /* compiled code */ }
+  }
+}

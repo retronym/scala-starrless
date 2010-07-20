@@ -38,8 +38,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
   }
 
   def printSymbol(level: Int, symbol: Symbol) {
-    if (!symbol.isLocal &&
-            !(symbol.isPrivate && !printPrivates)) {
+    if (printPrivates || !symbol.isPrivate) {
       def indent() {for (i <- 1 to level) print("  ")}
 
       printSymbolAttributes(symbol, true, indent)
@@ -95,16 +94,29 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
   }
 
   def printModifiers(symbol: Symbol) {
-    // print private access modifier
-    if (symbol.isPrivate) print("private ")
-    else if (symbol.isProtected) print("protected ")
-    else symbol match {
-      case sym: SymbolInfoSymbol => sym.symbolInfo.privateWithin match {
-        case Some(t: Symbol) => print("private[" + t.name +"] ")
-        case _ =>
+    lazy val privateWithin: Option[String] = {
+      symbol match {
+        case sym: SymbolInfoSymbol => sym.symbolInfo.privateWithin match {
+          case Some(t: Symbol) => Some("[" + t.name + "]")
+          case _ => None
+        }
+        case _ => None
       }
-      case _ =>
     }
+
+    // print private access modifier
+    if (symbol.isPrivate) {
+      print("private")
+      if (symbol.isLocal) print("[this] ")
+      else print(" ")
+    }
+    else if (symbol.isProtected) {
+      print("protected")
+      if (symbol.isLocal) print("[this]")
+      else privateWithin foreach print
+      print(" ")
+    }
+    else privateWithin.foreach(s => print("private" + s + " "))
 
     if (symbol.isSealed) print("sealed ")
     if (symbol.isImplicit) print("implicit ")
@@ -248,6 +260,8 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
     if (n.matches(".+\\$default\\$\\d+")) return // skip default function parameters
     if (n.startsWith("super$")) return // do not print auxiliary qualified super accessors
     if (m.isAccessor && n.endsWith("_$eq")) return
+    // TODO
+//    if (m.isCaseAccessor) return
     indent()
     printModifiers(m)
     if (m.isAccessor) {
