@@ -260,8 +260,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
     if (n.matches(".+\\$default\\$\\d+")) return // skip default function parameters
     if (n.startsWith("super$")) return // do not print auxiliary qualified super accessors
     if (m.isAccessor && n.endsWith("_$eq")) return
-    // TODO
-//    if (m.isCaseAccessor) return
+    if (m.isCaseAccessor) return
     indent()
     printModifiers(m)
     if (m.isAccessor) {
