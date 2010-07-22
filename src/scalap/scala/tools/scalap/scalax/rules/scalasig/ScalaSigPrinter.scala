@@ -18,8 +18,15 @@ import scala.tools.scalap.scalax.util.StringUtil
 import reflect.NameTransformer
 import java.lang.String
 
-class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
+sealed abstract class Verbosity
+case object ShowAll extends Verbosity
+case object HideClassPrivate extends Verbosity
+case object HideInstancePrivate extends Verbosity
+
+class ScalaSigPrinter(stream: PrintStream, verbosity: Verbosity) {
   import stream._
+
+  def this(stream: PrintStream, printPrivates: Boolean) = this(stream: PrintStream, HideClassPrivate)
 
   val CONSTRUCTOR_NAME = "<init>"
 
@@ -38,7 +45,15 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
   }
 
   def printSymbol(level: Int, symbol: Symbol) {
-    if (printPrivates || !symbol.isPrivate) {
+    val shouldPrint = {
+      val accessibilityOk = verbosity match {
+        case ShowAll => true
+        case HideClassPrivate => !symbol.isPrivate
+        case HideInstancePrivate => !symbol.isLocal
+      }
+      accessibilityOk && !symbol.isCaseAccessor
+    }
+    if (shouldPrint) {
       def indent() {for (i <- 1 to level) print("  ")}
 
       printSymbolAttributes(symbol, true, indent)
@@ -61,7 +76,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
         case a: AliasSymbol =>
           indent
           printAlias(level, a)
-        case t: TypeSymbol if !t.isParam && !t.name.matches("_\\$\\d+")=>
+        case t: TypeSymbol if !t.isParam && !t.name.matches("_\\$\\d+") =>
           indent
           printTypeSymbol(level, t)
         case s =>
@@ -166,7 +181,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
       case Some(m: MethodSymbol) =>
         val baos = new ByteArrayOutputStream
         val stream = new PrintStream(baos)
-        val printer = new ScalaSigPrinter(stream, printPrivates)
+        val printer = new ScalaSigPrinter(stream, verbosity)
         printer.printMethodType(m.infoType, false)(())
         baos.toString
       case None =>
@@ -260,12 +275,12 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
     if (n.matches(".+\\$default\\$\\d+")) return // skip default function parameters
     if (n.startsWith("super$")) return // do not print auxiliary qualified super accessors
     if (m.isAccessor && n.endsWith("_$eq")) return
-    if (m.isCaseAccessor) return
     indent()
     printModifiers(m)
     if (m.isAccessor) {
-      val indexOfSetter = m.parent.get.children.indexWhere(x => x.isInstanceOf[MethodSymbol] &&
-              x.asInstanceOf[MethodSymbol].name == n + "_$eq")
+      val indexOfSetter = m.parent.get.children.indexWhere(x =>
+        x.isInstanceOf[MethodSymbol] &&
+                x.asInstanceOf[MethodSymbol].name == n + "_$eq")
       print(if (indexOfSetter > 0) "var " else "val ")
     } else {
       print("def ")
@@ -385,7 +400,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
               processName(packSymbol.path) + "."
             case (_, SingletonTypePattern(a)) => a + "."
             case (_, a) => a + "#"
-          }          
+          }
           //remove package object reference
           val path = StringUtil.cutSubstring(prefixStr)(".package")
           val x = path + processName(symbol.name)
