@@ -349,7 +349,7 @@ class ScalaSigPrinter(stream: PrintStream, verbosity: Verbosity) {
   }
 
   def valueToString(value: Any): String = value match {
-    case t: Type => toString(t)
+    case t: Type => "classOf[%s]" format toString(t)
     // TODO string, char, float, etc.
     case _ => value.toString
   }

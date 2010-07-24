@@ -1,0 +1,5 @@
+class TypeAliasAnnotationArg extends java.lang.Object with scala.ScalaObject {
+  def this() = { /* compiled code */ }
+  @scala.throws(classOf[scala.IndexOutOfBoundsException])
+  def a : scala.Int = { /* compiled code */ }
+}
