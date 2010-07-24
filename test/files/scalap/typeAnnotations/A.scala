@@ -1,4 +1,4 @@
-abstract class TypeAnnotations[@specialized R] {
+abstract class TypeAnnotations[@specialized R](r: R) {
   @specialized val x = 10
   @specialized type T
 

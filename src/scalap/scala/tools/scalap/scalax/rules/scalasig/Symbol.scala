@@ -35,12 +35,21 @@ abstract class ScalaSigSymbol extends Symbol {
   def index = entry.index
 
   lazy val children : Seq[Symbol] = applyScalaSigRule(ScalaSigParsers.symbols) filter (_.parent == Some(this))
-  lazy val attributes : Seq[AttributeInfo] = applyScalaSigRule(ScalaSigParsers.attributes) filter (_.symbol == this)
+  lazy val attributes : Seq[AttributeInfo] = {
+    applyScalaSigRule(ScalaSigParsers.attributes) filter {attr =>
+      (attr.symbol, this) match {
+        case (s, t) if s == t => true
+        case (MethodSymbol(info1, ref1), MethodSymbol(info2, ref2))
+          if info1.name == (info2.name + " ") => true
+        case _ => false
+      }
+    }
+  }
 }
 
-case class ExternalSymbol(name : String, parent : Option[Symbol], entry : ScalaSig#Entry) extends ScalaSigSymbol {
+case class ExternalSymbol(name: String, parent: Option[Symbol], entry: ScalaSig#Entry) extends ScalaSigSymbol {
   override def toString = path
-  def hasFlag(flag : Long) = false
+  def hasFlag(flag: Long) = false
 }
 
 case class SymbolInfo(name : String, owner : Symbol, flags : Int, privateWithin : Option[AnyRef], info : Int, entry : ScalaSig#Entry) {

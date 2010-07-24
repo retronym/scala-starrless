@@ -26,7 +26,7 @@ case object HideInstancePrivate extends Verbosity
 class ScalaSigPrinter(stream: PrintStream, verbosity: Verbosity) {
   import stream._
 
-  def this(stream: PrintStream, printPrivates: Boolean) = this(stream: PrintStream, HideClassPrivate)
+  def this(stream: PrintStream, printPrivates: Boolean) = this(stream: PrintStream, if (printPrivates) ShowAll else HideClassPrivate)
 
   val CONSTRUCTOR_NAME = "<init>"
 
@@ -99,7 +99,10 @@ class ScalaSigPrinter(stream: PrintStream, verbosity: Verbosity) {
 
 
   private def printChildren(level: Int, symbol: Symbol) {
-    for (child <- symbol.children) printSymbol(level + 1, child)
+    for {
+      child <- symbol.children
+      if !(child.isParam && child.isType)
+    } printSymbol(level + 1, child)
   }
 
   def printWithIndent(level: Int, s: String) {
