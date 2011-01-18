@@ -10,6 +10,7 @@ object CaseClassAndObject extends java.lang.Object with scala.ScalaObject {
     override def productElement(x$1 : scala.Int) : scala.Any = { /* compiled code */ }
     override def canEqual(x$1 : scala.Any) : scala.Boolean = { /* compiled code */ }
   }
-
-  object A
+  object A extends java.lang.Object with scala.ScalaObject {
+    def this() = { /* compiled code */ }
+  }
 }
