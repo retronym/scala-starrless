@@ -46,7 +46,7 @@ class CodeWriter(writer: Writer) {
     this
   }
 
-  def undent: CodeWriter = {
+  def unindent: CodeWriter = {
     level -= 1
     this
   }

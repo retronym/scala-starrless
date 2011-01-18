@@ -167,7 +167,7 @@ class JavaWriter(classfile: Classfile, writer: Writer) extends CodeWriter(writer
           if (i > 2) print(", ")
           print(getClassName(inx).trim())
         }
-        undent.newline
+        unindent.newline
       case None =>
     }
   }
@@ -223,7 +223,7 @@ class JavaWriter(classfile: Classfile, writer: Writer) extends CodeWriter(writer
         else
           printMethod(flags, name, tpe, attribs)
     }
-    undent.print("}").newline
+    unindent.print("}").newline
     if (!statics.isEmpty) {
       print("object " + getSimpleClassName(cf.classname) + " {")
       indent.newline
@@ -234,7 +234,7 @@ class JavaWriter(classfile: Classfile, writer: Writer) extends CodeWriter(writer
           if (getName(name) != "<clinit>")
             printMethod(flags, name, tpe, attribs)
       }
-      undent.print("}").newline
+      unindent.print("}").newline
     }
   }
 
