@@ -45,6 +45,7 @@ class ScalaSigPrinter(stream: PrintStream, verbosity: Verbosity) {
   }
 
   def printSymbol(level: Int, symbol: Symbol) {
+    if (symbol.isSynthetic) return
     val shouldPrint = {
       val accessibilityOk = verbosity match {
         case ShowAll => true
@@ -59,14 +60,12 @@ class ScalaSigPrinter(stream: PrintStream, verbosity: Verbosity) {
       printSymbolAttributes(symbol, true, indent)
       symbol match {
         case o: ObjectSymbol =>
-          if (!isCaseClassObject(o)) {
-            indent
-            if (o.name == "package") {
-              // print package object
-              printPackageObject(level, o)
-            } else {
-              printObject(level, o)
-            }
+          indent
+          if (o.name == "package") {
+            // print package object
+            printPackageObject(level, o)
+          } else {
+            printObject(level, o)
           }
         case c: ClassSymbol if !refinementClass(c) && !c.isModule =>
           indent
