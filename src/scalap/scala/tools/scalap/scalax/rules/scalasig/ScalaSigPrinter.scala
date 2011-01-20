@@ -151,6 +151,10 @@ class ScalaSigPrinter(stream: PrintStream, verbosity: Verbosity) {
   def printClass(level: Int, c: ClassSymbol) {
     if (c.name == "<local child>" /*scala.tools.nsc.symtab.StdNames.LOCALCHILD.toString()*/ ) {
       print("\n")
+    } else if (c.name == "<refinement>") { //todo: make it better to avoin '\n' char
+      print("{\n")
+      printChildren(level, c)
+      printWithIndent(level, "}")
     } else {
       printModifiers(c)
       val defaultConstructor = if (c.isCase) getPrinterByConstructor(c) else ""
@@ -175,7 +179,15 @@ class ScalaSigPrinter(stream: PrintStream, verbosity: Verbosity) {
     }
   }
 
-  def getPrinterByConstructor(c: ClassSymbol) = {
+  def getClassString(level: Int, c: ClassSymbol): String = {
+    val baos = new ByteArrayOutputStream
+    val stream = new PrintStream(baos)
+    val printer = new ScalaSigPrinter(stream, verbosity)
+    printer.printClass(level, c)
+    baos.toString
+  }
+
+  def getPrinterByConstructor(c: ClassSymbol): String = {
     c.children.find {
       case m: MethodSymbol if m.name == CONSTRUCTOR_NAME => true
       case _ => false
@@ -416,6 +428,9 @@ class ScalaSigPrinter(stream: PrintStream, verbosity: Verbosity) {
         val ubs = if (!ub.equals("scala.Any")) " <: " + ub else ""
         lbs + ubs
       }
+      case RefinedType(classSym: ClassSymbol, typeRefs) =>
+        val classStr = getClassString(0, classSym)
+        sep + typeRefs.map(toString).mkString("", " with ", "") + (if (classStr == "{\n}") "" else classStr)
       case RefinedType(classSym, typeRefs) => sep + typeRefs.map(toString).mkString("", " with ", "")
       case ClassInfoType(symbol, typeRefs) => sep + typeRefs.map(toString).mkString(" extends ", " with ", "")
       case ClassInfoTypeWithCons(symbol, typeRefs, cons) => sep + typeRefs.map(toString).
@@ -454,7 +469,7 @@ class ScalaSigPrinter(stream: PrintStream, verbosity: Verbosity) {
     if (typeArgs.isEmpty) ""
     else typeArgs.map(toString).map(StringUtil.trimStart(_, "=> ")).mkString("[", ", ", "]")
 
-  def typeParamString(params: Seq[Symbol]): String =
+  def typeParamString(params: Seq[TypeSymbol]): String =
     if (params.isEmpty) ""
     else params.map(toString).mkString("[", ", ", "]")
 
