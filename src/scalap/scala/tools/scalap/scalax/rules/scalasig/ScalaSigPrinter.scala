@@ -152,7 +152,7 @@ class ScalaSigPrinter(stream: PrintStream, verbosity: Verbosity) {
     if (c.name == "<local child>" /*scala.tools.nsc.symtab.StdNames.LOCALCHILD.toString()*/ ) {
       print("\n")
     } else if (c.name == "<refinement>") { //todo: make it better to avoin '\n' char
-      print("{\n")
+      print(" {\n")
       printChildren(level, c)
       printWithIndent(level, "}")
     } else {
@@ -306,8 +306,12 @@ class ScalaSigPrinter(stream: PrintStream, verbosity: Verbosity) {
       case name =>
         val nn = processName(name)
         print(nn)
+        val printBody = !m.isDeferred && (m.parent match {
+          case Some(c: ClassSymbol) if refinementClass(c) => false
+          case _ => true
+        })
         printMethodType(m.infoType, true)(
-          {if (!m.isDeferred) print(" = { /* compiled code */ }" /* Print body only for non-abstract methods */ )}
+          {if (printBody) print(" = { /* compiled code */ }" /* Print body only for non-abstract methods */ )}
           )
     }
     print("\n")
@@ -430,7 +434,7 @@ class ScalaSigPrinter(stream: PrintStream, verbosity: Verbosity) {
       }
       case RefinedType(classSym: ClassSymbol, typeRefs) =>
         val classStr = getClassString(0, classSym)
-        sep + typeRefs.map(toString).mkString("", " with ", "") + (if (classStr == "{\n}") "" else classStr)
+        sep + typeRefs.map(toString).mkString("", " with ", "") + (if (classStr == " {\n}") "" else classStr)
       case RefinedType(classSym, typeRefs) => sep + typeRefs.map(toString).mkString("", " with ", "")
       case ClassInfoType(symbol, typeRefs) => sep + typeRefs.map(toString).mkString(" extends ", " with ", "")
       case ClassInfoTypeWithCons(symbol, typeRefs, cons) => sep + typeRefs.map(toString).
