@@ -1,0 +1,6 @@
+class CyclicInnerClassInheritance extends CyclicInnerClassInheritanceBase with scala.ScalaObject {
+  def this() = { /* compiled code */ }
+  class Inner extends super.Inner with scala.ScalaObject {
+    def this() = { /* compiled code */ }
+  }
+}
