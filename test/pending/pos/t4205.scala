@@ -1,10 +1,8 @@
 object t4205 {
-  trait A[M[_]] {
-    null.asInstanceOf[B[M]].b1("")
-  }
+  new B[Nothing]().b1
 
-  trait B[N[_]] {
-    def b1[A](a: A) = b2[N]
-    def b2[O[_]] = ()
+  class B[N[_]] {
+    def b1 = b2[N]
+    def b2[O[_]] {}
   }
 }
