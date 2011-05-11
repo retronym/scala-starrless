@@ -252,8 +252,12 @@ class ScalaSigPrinter(stream: PrintStream, verbosity: Verbosity) {
 
       // Print parameter clauses
       print(paramEntries.mkString(
-        "(" + (mt match {case _: ImplicitMethodType => "implicit "; case _ => ""})
-        , ", ", ")"))
+        "(" + (mt match {
+          case _: ImplicitMethodType => "implicit "
+          //for Scala 2.9
+          case mt: MethodType if mt.paramSymbols.length > 0 && mt.paramSymbols(0).isImplicit => "implicit "
+          case _ => ""
+        }), ", ", ")"))
 
       // Print result type
       mt.resultType match {
@@ -357,7 +361,6 @@ class ScalaSigPrinter(stream: PrintStream, verbosity: Verbosity) {
         buffer.append(" = ")
         buffer.append(valueToString(value))
       }
-      buffer.append(valueToString(attrib.value))
       buffer.append(" }")
     }
     buffer.toString
