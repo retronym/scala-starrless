@@ -96,6 +96,11 @@ class ScalaSigPrinter(stream: PrintStream, verbosity: Verbosity) {
     case _ => false
   }
 
+  private def underObject(m: MethodSymbol) = m.parent match {
+    case Some(c: ClassSymbol) => c.isModule
+    case _ => false
+  }
+
 
   private def printChildren(level: Int, symbol: Symbol) {
     for {
@@ -290,6 +295,7 @@ class ScalaSigPrinter(stream: PrintStream, verbosity: Verbosity) {
 
     val n = m.name
     if (underCaseClass(m) && n == CONSTRUCTOR_NAME) return
+    if (underObject(m) && n == CONSTRUCTOR_NAME) return
     if (n.matches(".+\\$default\\$\\d+")) return // skip default function parameters
     if (n.startsWith("super$")) return // do not print auxiliary qualified super accessors
     if (m.isAccessor && n.endsWith("_$eq")) return
