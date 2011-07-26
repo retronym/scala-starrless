@@ -75,7 +75,10 @@ class ScalaSigPrinter(stream: PrintStream, verbosity: Verbosity) {
         case a: AliasSymbol =>
           indent
           printAlias(level, a)
-        case t: TypeSymbol if !t.isParam && !t.name.matches("_\\$\\d+") =>
+        case t: TypeSymbol if !t.isParam && !t.name.matches("_\\$\\d+") &&
+          !t.name.matches("\\?(\\d)+") =>
+          // todo: type 0? found in Suite class from scalatest package. So this is quickfix,
+          // todo: we need to find why such strange type is here
           indent
           printTypeSymbol(level, t)
         case s =>
@@ -510,7 +513,11 @@ class ScalaSigPrinter(stream: PrintStream, verbosity: Verbosity) {
       val re = "\\" + key
       temp = temp.replaceAll(re, _syms(re))
     }
-    val result = temp.replaceAll(placeholderPattern, "_")
+    var result = temp.replaceAll(placeholderPattern, "_")
+
+    //to avoid names like this one: ?0 (from existential type parameters)
+    if (result.length() > 1 && result(0) == '?' && result(1).isDigit) result = "x" + result.substring(1)
+
     NameTransformer.decode(result)
   }
 
