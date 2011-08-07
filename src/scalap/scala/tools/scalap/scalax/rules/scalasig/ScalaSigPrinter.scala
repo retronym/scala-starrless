@@ -52,7 +52,11 @@ class ScalaSigPrinter(stream: PrintStream, verbosity: Verbosity) {
         case HideClassPrivate => !symbol.isPrivate
         case HideInstancePrivate => !symbol.isLocal
       }
-      accessibilityOk && !symbol.isCaseAccessor
+      val paramAccessor = symbol match {
+        case m: MethodSymbol if m.isParamAccessor => true
+        case _ => false
+      }
+      accessibilityOk && !symbol.isCaseAccessor && !paramAccessor
     }
     if (shouldPrint) {
       def indent() {for (i <- 1 to level) print("  ")}
@@ -212,11 +216,18 @@ class ScalaSigPrinter(stream: PrintStream, verbosity: Verbosity) {
         val baos = new ByteArrayOutputStream
         val stream = new PrintStream(baos)
         val printer = new ScalaSigPrinter(stream, verbosity)
-        printer.printMethodType(m.infoType, false)(())
-        baos.toString
+        printer.printPrimaryConstructor(m, c)
+        val res = baos.toString
+        if (res.length() > 0 && res.charAt(0) != '(') " " + res
+        else res
       case None =>
         ""
     }
+  }
+
+  def printPrimaryConstructor(m: MethodSymbol, c: ClassSymbol) {
+    printModifiers(m)
+    printMethodType(m.infoType, false, methodSymbolAsClassParam(_, c))(())
   }
 
   def printPackageObject(level: Int, o: ObjectSymbol) {
@@ -254,15 +265,42 @@ class ScalaSigPrinter(stream: PrintStream, verbosity: Verbosity) {
     if (res.length > 1) StringUtil.decapitalize(res.substring(0, 1)) else res.toLowerCase
   })
 
-  def printMethodType(t: Type, printResult: Boolean)(cont: => Unit) {
+  private def methodSymbolAsMethodParam(ms: MethodSymbol): String = {
+    val nameAndType = ms.name + " : " + toString(ms.infoType)(TypeFlags(true))
+    val default = if (ms.hasDefault) " = { /* compiled code */ }" else ""
+    nameAndType + default
+  }
 
-    def _pmt(mt: Type {def resultType: Type; def paramSymbols: Seq[Symbol]}) = {
+  private def methodSymbolAsClassParam(msymb: MethodSymbol, c: ClassSymbol): String = {
+    val baos = new ByteArrayOutputStream
+    val stream = new PrintStream(baos)
+    val printer = new ScalaSigPrinter(stream, verbosity)
+    var break = false
+    for (child <- c.children if !break) {
+      child match {
+        case ms: MethodSymbol if ms.isParamAccessor && msymb.name == ms.name =>
+          printer.printSymbolAttributes(ms, false, ())
+          printer.printModifiers(ms)
+          if (ms.isParamAccessor && ms.isMutable) stream.print("var ")
+          else if (ms.isParamAccessor) stream.print("val ")
+          break = true
+        case _ =>
+      }
+    }
+
+    val nameAndType = msymb.name + " : " + toString(msymb.infoType)(TypeFlags(true))
+    val default = if (msymb.hasDefault) " = { /* compiled code */ }" else ""
+    stream.print(nameAndType + default)
+    baos.toString
+  }
+
+  def printMethodType(t: Type, printResult: Boolean,
+                      pe: MethodSymbol => String = methodSymbolAsMethodParam)(cont: => Unit) {
+
+    def _pmt(mt: Type {def resultType: Type; def paramSymbols: Seq[Symbol]}) {
 
       val paramEntries = mt.paramSymbols.map({
-        case ms: MethodSymbol =>
-          val nameAndType = ms.name + " : " + toString(ms.infoType)(TypeFlags(true))
-          val default = if (ms.hasDefault) " = { /* compiled code */ }" else ""
-          nameAndType + default
+        case ms: MethodSymbol => pe(ms)
         case _ => "^___^"
       })
 
@@ -302,13 +340,14 @@ class ScalaSigPrinter(stream: PrintStream, verbosity: Verbosity) {
   }
 
   def printMethod(level: Int, m: MethodSymbol, indent: () => Unit) {
-    def cont = print(" = { /* compiled code */ }")
+    def cont {print(" = { /* compiled code */ }")}
 
     val n = m.name
     if (underObject(m) && n == CONSTRUCTOR_NAME) return
     if (n.matches(".+\\$default\\$\\d+")) return // skip default function parameters
     if (n.startsWith("super$")) return // do not print auxiliary qualified super accessors
     if (m.isAccessor && n.endsWith("_$eq")) return
+    if (m.isParamAccessor) return //do not print class parameters
     indent()
     printModifiers(m)
     if (m.isAccessor) {
