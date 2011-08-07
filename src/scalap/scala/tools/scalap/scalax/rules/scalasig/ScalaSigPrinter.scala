@@ -105,16 +105,24 @@ class ScalaSigPrinter(stream: PrintStream, verbosity: Verbosity) {
   }
 
 
-  private def printChildren(level: Int, symbol: Symbol) {
+  private def printChildren(level: Int, symbol: Symbol, filterFirstCons: Boolean = false) {
+    var firstConsFiltered = !filterFirstCons
     for {
       child <- symbol.children
       if !(child.isParam && child.isType)
-    } printSymbol(level + 1, child)
+    } {
+      if (!firstConsFiltered)
+        child match {
+          case m: MethodSymbol if m.name == CONSTRUCTOR_NAME => firstConsFiltered = true
+          case _ => printSymbol(level + 1, child)
+        }
+      else printSymbol(level + 1, child)
+    }
   }
 
   def printWithIndent(level: Int, s: String) {
     def indent() {for (i <- 1 to level) print("  ")}
-    indent;
+    indent()
     print(s)
   }
 
@@ -165,13 +173,13 @@ class ScalaSigPrinter(stream: PrintStream, verbosity: Verbosity) {
       printWithIndent(level, "}")
     } else {
       printModifiers(c)
-      val defaultConstructor = if (c.isCase) getPrinterByConstructor(c) else ""
+      val defaultConstructor = if (!c.isTrait) getPrinterByConstructor(c) else ""
       if (c.isTrait) print("trait ") else print("class ")
       print(processName(c.name))
       val it = c.infoType
       val classType = it match {
         case PolyType(typeRef, symbols) => PolyTypeWithCons(typeRef, symbols, defaultConstructor)
-        case ClassInfoType(a, b) if c.isCase => ClassInfoTypeWithCons(a, b, defaultConstructor)
+        case ClassInfoType(a, b) if !c.isTrait => ClassInfoTypeWithCons(a, b, defaultConstructor)
         case _ => it
       }
       printType(classType)
@@ -182,7 +190,7 @@ class ScalaSigPrinter(stream: PrintStream, verbosity: Verbosity) {
         case None =>
       }
       print("\n")
-      printChildren(level, c)
+      printChildren(level, c, !c.isTrait)
       printWithIndent(level, "}\n")
     }
   }
@@ -246,7 +254,7 @@ class ScalaSigPrinter(stream: PrintStream, verbosity: Verbosity) {
     if (res.length > 1) StringUtil.decapitalize(res.substring(0, 1)) else res.toLowerCase
   })
 
-  def printMethodType(t: Type, printResult: Boolean)(cont: => Unit): Unit = {
+  def printMethodType(t: Type, printResult: Boolean)(cont: => Unit) {
 
     def _pmt(mt: Type {def resultType: Type; def paramSymbols: Seq[Symbol]}) = {
 
@@ -297,7 +305,6 @@ class ScalaSigPrinter(stream: PrintStream, verbosity: Verbosity) {
     def cont = print(" = { /* compiled code */ }")
 
     val n = m.name
-    if (underCaseClass(m) && n == CONSTRUCTOR_NAME) return
     if (underObject(m) && n == CONSTRUCTOR_NAME) return
     if (n.matches(".+\\$default\\$\\d+")) return // skip default function parameters
     if (n.startsWith("super$")) return // do not print auxiliary qualified super accessors
