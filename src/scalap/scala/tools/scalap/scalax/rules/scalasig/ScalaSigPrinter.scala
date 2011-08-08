@@ -260,7 +260,7 @@ class ScalaSigPrinter(stream: PrintStream, verbosity: Verbosity) {
     val j = str.indexOf("[")
     if (j > 0) str = str.substring(0, j)
     str = StringUtil.trimStart(str, "=> ")
-    var i = str.lastIndexOf(".")
+    val i = str.lastIndexOf(".")
     val res = if (i > 0) str.substring(i + 1) else str
     if (res.length > 1) StringUtil.decapitalize(res.substring(0, 1)) else res.toLowerCase
   })
@@ -279,10 +279,12 @@ class ScalaSigPrinter(stream: PrintStream, verbosity: Verbosity) {
     for (child <- c.children if !break) {
       child match {
         case ms: MethodSymbol if ms.isParamAccessor && msymb.name == ms.name =>
-          printer.printSymbolAttributes(ms, false, ())
-          printer.printModifiers(ms)
-          if (ms.isParamAccessor && ms.isMutable) stream.print("var ")
-          else if (ms.isParamAccessor) stream.print("val ")
+          if (!ms.isPrivate || !ms.isLocal) {
+            printer.printSymbolAttributes(ms, false, ())
+            printer.printModifiers(ms)
+            if (ms.isParamAccessor && ms.isMutable) stream.print("var ")
+            else if (ms.isParamAccessor) stream.print("val ")
+          }
           break = true
         case _ =>
       }
