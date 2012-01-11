@@ -17,6 +17,8 @@ import java.util.regex.Pattern
 import scala.tools.scalap.scalax.util.StringUtil
 import reflect.NameTransformer
 import java.lang.String
+import tools.nsc.ast.parser.Tokens
+import tools.nsc.util.Chars
 
 sealed abstract class Verbosity
 case object ShowAll extends Verbosity
@@ -551,8 +553,24 @@ class ScalaSigPrinter(stream: PrintStream, verbosity: Verbosity) {
     val i = name.lastIndexOf("$$")
     if (i > 0) name.substring(i + 2) else name
   }
-
-  def processName(name: String) = {
+  
+  def processName(name: String): String = {
+    def processNameWithoutDot(name: String) = {
+      def isIdentifier(id: String): Boolean = {
+        if (id.isEmpty) return false
+        if (Chars.isIdentifierStart(id(0))) {
+          if (id.indexWhere(c => !Chars.isIdentifierPart(c) && c != '_') >= 0) return false
+          val index = id.indexWhere(Chars.isOperatorPart(_))
+          if (index < 0) return true
+          if (id(index - 1) != '_') return false
+          id.drop(index).forall(Chars.isOperatorPart(_))
+        } else if (Chars.isOperatorPart(id(0))) {
+          id != "|" && id.forall(Chars.isOperatorPart(_))
+        } else false
+      }
+      var result = NameTransformer.decode(name)
+      if (!isIdentifier(result)) "`" + result + "`" else result
+    }
     val stripped = stripPrivatePrefix(name)
     val m = pattern.matcher(stripped)
     var temp = stripped
@@ -565,8 +583,6 @@ class ScalaSigPrinter(stream: PrintStream, verbosity: Verbosity) {
 
     //to avoid names like this one: ?0 (from existential type parameters)
     if (result.length() > 1 && result(0) == '?' && result(1).isDigit) result = "x" + result.substring(1)
-
-    NameTransformer.decode(result)
+    result.split('.').map(s => processNameWithoutDot(s)).mkString(".")
   }
-
 }
