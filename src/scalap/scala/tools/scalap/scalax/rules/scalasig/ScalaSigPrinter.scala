@@ -506,7 +506,7 @@ class ScalaSigPrinter(stream: PrintStream, verbosity: Verbosity) {
       case MethodType(resultType, _) => toString(resultType, sep)
 
       case PolyType(typeRef, symbols) => typeParamString(symbols) + toString(typeRef, sep)
-      case PolyTypeWithCons(typeRef, symbols, cons) => typeParamString(symbols) + processName(cons) + toString(typeRef, sep)
+      case PolyTypeWithCons(typeRef, symbols, cons) => typeParamString(symbols) + cons + toString(typeRef, sep)
       case AnnotatedType(typeRef, attribTreeRefs) => {
         toString(typeRef, sep)
       }
