@@ -18,7 +18,7 @@ import scala.tools.scalap.scalax.util.StringUtil
 import reflect.NameTransformer
 import java.lang.String
 import tools.nsc.ast.parser.Tokens
-import tools.nsc.util.Chars
+import annotation.switch
 
 sealed abstract class Verbosity
 case object ShowAll extends Verbosity
@@ -557,15 +557,40 @@ class ScalaSigPrinter(stream: PrintStream, verbosity: Verbosity) {
   def processName(name: String): String = {
     def processNameWithoutDot(name: String) = {
       def isIdentifier(id: String): Boolean = {
+        //following four methods is the same like in scala.tools.nsc.util.Chars class
+        /** Can character start an alphanumeric Scala identifier? */
+        def isIdentifierStart(c: Char): Boolean =
+          (c == '_') || (c == '$') || Character.isUnicodeIdentifierStart(c)
+
+        /** Can character form part of an alphanumeric Scala identifier? */
+        def isIdentifierPart(c: Char) =
+          (c == '$') || Character.isUnicodeIdentifierPart(c)
+
+        /** Is character a math or other symbol in Unicode?  */
+        def isSpecial(c: Char) = {
+          val chtp = Character.getType(c)
+          chtp == Character.MATH_SYMBOL.toInt || chtp == Character.OTHER_SYMBOL.toInt
+        }
+
+        /** Can character form part of a Scala operator name? */
+        def isOperatorPart(c : Char) : Boolean = (c: @switch) match {
+          case '~' | '!' | '@' | '#' | '%' |
+               '^' | '*' | '+' | '-' | '<' |
+               '>' | '?' | ':' | '=' | '&' |
+               '|' | '/' | '\\' => true
+          case c => isSpecial(c)
+        }
+
+
         if (id.isEmpty) return false
-        if (Chars.isIdentifierStart(id(0))) {
-          if (id.indexWhere(c => !Chars.isIdentifierPart(c) && c != '_') >= 0) return false
-          val index = id.indexWhere(Chars.isOperatorPart(_))
+        if (isIdentifierStart(id(0))) {
+          if (id.indexWhere(c => !isIdentifierPart(c) && c != '_') >= 0) return false
+          val index = id.indexWhere(isOperatorPart(_))
           if (index < 0) return true
           if (id(index - 1) != '_') return false
-          id.drop(index).forall(Chars.isOperatorPart(_))
-        } else if (Chars.isOperatorPart(id(0))) {
-          id != "|" && id.forall(Chars.isOperatorPart(_))
+          id.drop(index).forall(isOperatorPart(_))
+        } else if (isOperatorPart(id(0))) {
+          id != "|" && id.forall(isOperatorPart(_))
         } else false
       }
       var result = NameTransformer.decode(name)
